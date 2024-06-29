@@ -8,6 +8,24 @@ CI_PROJECT_PATH=/go/src/github.com/radekg/terraform-provisioner-ansible
 
 TEST_TIMEOUT?=120s
 
+OS := $(shell uname -s | tr A-Z a-z)
+ifeq ($(OS),darwin)
+    OS := darwin
+else ifeq ($(OS),linux)
+    OS := linux
+else
+    $(error Unsupported OS: $(OS))
+endif
+
+ARCH := $(shell uname -m)
+ifeq ($(ARCH),x86_64)
+    ARCH := amd64
+else ifeq ($(ARCH),arm64)
+    ARCH := arm64
+else
+    $(error Unsupported architecture: $(ARCH))
+endif
+
 .PHONY: plugins-dir
 plugins-dir:
 	mkdir -p ${PLUGINS_DIR}
@@ -55,8 +73,7 @@ build-darwin: check-golang-version plugins-dir
 # this rule is invoked by the bin/build-release-binaries.sh script inside of a docker container where the build happens
 .PHONY: build-release
 build-release:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 installsuffix=cgo go build -o ${GOPATH}/bin/${BINARY_NAME}-linux-amd64_${RELEASE_VERSION}
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 installsuffix=cgo go build -o ${GOPATH}/bin/${BINARY_NAME}-darwin-amd64_${RELEASE_VERSION}
+	CGO_ENABLED=0 GOOS=${OS} GOARCH=$(ARCH) installsuffix=cgo go build -o ${GOPATH}/bin/${BINARY_NAME}-$(OS)-$(ARCH)_${RELEASE_VERSION}
 
 .PHONY: coverage
 coverage:
